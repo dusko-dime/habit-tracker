@@ -47,9 +47,15 @@ def test_create_habit(client: TestClient) -> None:
     assert [h["name"] for h in listed] == ["Read"]
 
 
-def test_create_habit_rejects_empty_name(client: TestClient) -> None:
-    response = client.post("/api/habits", json={"name": ""})
+@pytest.mark.parametrize("name", ["", "   "])
+def test_create_habit_rejects_blank_name(client: TestClient, name: str) -> None:
+    response = client.post("/api/habits", json={"name": name})
     assert response.status_code == 422
+
+
+def test_create_habit_strips_name(client: TestClient) -> None:
+    response = client.post("/api/habits", json={"name": "  Read  "})
+    assert response.json()["name"] == "Read"
 
 
 def test_check_habit_marks_today_done(client: TestClient) -> None:
