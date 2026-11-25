@@ -4,6 +4,7 @@ from datetime import UTC, date, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
+from pydantic import ConfigDict
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 
@@ -20,6 +21,8 @@ class HabitCheck(SQLModel, table=True):
 
 
 class HabitCreate(SQLModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     name: str = Field(min_length=1)
 
 
