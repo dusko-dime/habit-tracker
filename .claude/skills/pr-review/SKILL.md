@@ -5,7 +5,7 @@ description: Review a pull request or the current branch's changes against this 
 
 # PR review (habit-tracker)
 
-Review changes for correctness and for this repo's conventions (see `CLAUDE.md`). **Report only** — don't edit files, commit, push, or post comments on GitHub unless the user asks.
+Review changes for correctness and for this repo's conventions (see `CLAUDE.md`). Never edit files, commit, or push. Locally, **report only** — don't post comments on GitHub unless the user asks. In GitHub Actions, follow "Running in CI" at the end instead.
 
 ## 1. Get the diff
 
@@ -71,3 +71,19 @@ Then findings, most severe first, each with:
 - the suggested fix in a sentence or a short snippet
 
 Only report findings you've confirmed by reading the code. If there are none, say so plainly. End with anything you couldn't verify (for example, behavior that needs the app running in a browser).
+
+## Running in CI
+
+When the prompt gives a PR number and says you're in GitHub Actions (`.github/workflows/claude-pr-review.yml`), these rules replace the local ones above:
+
+- **Environment:** Linux bash, repo root as working directory, PR branch already checked out with dependencies installed. Don't run `gh pr checkout`, `uv sync` or `npm ci`. Only one commit is fetched, so `git diff main...HEAD` won't work.
+- **Diff:** `gh pr view <n>` and `gh pr diff <n>`. Read changed files from the working tree.
+- **Checks:** run exactly these, from the repo root (only these forms are allowed):
+  - `uv run --directory backend ruff check .`
+  - `uv run --directory backend pytest`
+  - `npm --prefix frontend run lint`
+  - `npm --prefix frontend test -- --run`
+  - `npm --prefix frontend run build`
+- **Inline comments:** one per finding that points at a changed line, using `mcp__github_inline_comment__create_inline_comment` with `confirmed: true`. Put the severity first (`**bug:**`, `**convention:**`, `**nit:**`), then the problem and the fix. Skip findings on lines outside the diff; they go in the summary instead.
+- **Summary comment:** post exactly one with `gh pr comment <n> --body-file -` (pipe the body in via a heredoc). It contains the verdict, the check-results table, and a one-line list of findings (or "No issues found."). End with `_Automated review by Claude using .claude/skills/pr-review._`
+- **Output:** all feedback goes in GitHub comments; don't put review text only in your final message.
